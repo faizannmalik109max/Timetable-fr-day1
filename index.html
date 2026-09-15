@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827"><link rel="manifest" href="manifest.webmanifest">
+<title>Daily Timetable</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f4f6;color:#111827;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:#111827;color:#fff;padding:26px 18px 20px;border-radius:0 0 28px 28px;position:sticky;top:0;z-index:5;box-shadow:0 5px 20px #0002}
+.top{display:flex;justify-content:space-between;align-items:center}.title{font-size:25px;font-weight:800}.date{font-size:13px;color:#cbd5e1;margin-top:3px}
+.ring{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#22c55e var(--p),#374151 0);position:relative}.ring:after{content:"";position:absolute;inset:6px;background:#111827;border-radius:50%}.pct{z-index:1;font-weight:800;font-size:13px}
+main{max-width:650px;margin:auto;padding:14px 14px 30px}.actions{display:flex;gap:8px;margin:2px 0 13px}.btn{border:0;border-radius:13px;padding:10px 13px;font-weight:750}.primary{background:#dbeafe;color:#1e40af}.danger{background:#fee2e2;color:#991b1b}
+.notice{background:#fff7ed;color:#7c2d12;padding:12px 13px;border-radius:16px;font-size:12px;margin-bottom:12px}
+.task{background:#fff;border-radius:18px;padding:13px;display:flex;align-items:center;gap:10px;margin:9px 0;box-shadow:0 3px 12px #0000000b;transition:.22s;animation:in .35s both}.task:active{transform:scale(.98)}.task.done{opacity:.48}.task.overdue{border:2px solid #ef4444;animation:pulse 1.4s infinite}.task.active{border:2px solid #60a5fa}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes pulse{0%,100%{box-shadow:0 0 0 0 #ef444455}50%{box-shadow:0 0 0 7px #ef444400}}
+.check{width:29px;height:29px;border:2px solid #9ca3af;border-radius:50%;display:grid;place-items:center;flex:none;font-size:18px;font-weight:900}.done .check{background:#22c55e;border-color:#22c55e;color:white}
+.time{width:91px;font-size:12px;font-weight:800;color:#6b7280}.name{font-size:15px;font-weight:750}.done .name{text-decoration:line-through}.tag{font-size:10px;color:#9ca3af;margin-top:2px}.status{margin-left:auto;font-size:10px;font-weight:800;color:#ef4444}
+#install{display:none;background:#22c55e;color:white}.small{font-size:11px;color:#9ca3af;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<header><div class="top"><div><div class="title">My Daily Timetable</div><div class="date" id="date"></div></div><div class="ring" id="ring"><span class="pct" id="pct">0%</span></div></div></header>
+<main><div class="actions"><button class="btn primary" id="all">✓ Mark all</button><button class="btn danger" id="reset">↺ Reset</button><button class="btn" id="install">＋ Install</button></div>
+<div class="notice">💊 <b>Tacrolimus:</b> 10:00 AM & 10:00 PM. Keep your timing/food instructions consistent with your transplant team.</div>
+<div id="list"></div><div class="small">Daily checklist • resets automatically after the calendar date changes</div></main>
+<script>
+const tasks=[
+["07:30","7:30 AM","Wake up","Morning"],["07:30","7:30–8:00 AM","Freshen up + washroom + water","Morning"],["08:00","8:00–8:30 AM","Breakfast","Meals"],["08:30","8:30–9:00 AM","Book reading","Reading"],["09:00","9:00–9:30 AM","Get ready + leave","Office"],["10:00","10:00 AM","Tacrolimus","MEDICINE"],["10:00","10:00 AM–5:00 PM","Office","Work"],["17:00","5:00–5:30 PM","Travel home","Travel"],["17:30","5:30–6:00 PM","Rest / snack / chill","Break"],["18:00","6:00–7:30 PM","Freelance — Deep Work #1","Freelance"],["19:30","7:30–8:00 PM","Break / walk / refresh","Break"],["20:00","8:00–8:30 PM","Dinner","Meals"],["20:30","8:30–9:45 PM","Freelance — Deep Work #2","Freelance"],["21:45","9:45–10:00 PM","Relax + prepare for Tac","Medicine"],["22:00","10:00 PM","Tacrolimus","MEDICINE"],["22:00","10:00–10:30 PM","Wind-down","Night"],["22:30","10:30–11:00 PM","Book reading","Reading"],["23:00","11:00–11:30 PM","Free time / family / entertainment","Free time"],["23:30","11:30 PM","Sleep","Night"]];
+const KEY="dailyTT-v2", today=()=>new Date().toISOString().slice(0,10);
+let s=JSON.parse(localStorage.getItem(KEY)||"{}"); if(s.day!==today())s={day:today(),done:{}};
+function save(){localStorage.setItem(KEY,JSON.stringify(s))}
+function mins(hm){let [h,m]=hm.split(":").map(Number);return h*60+m}
+function render(){let now=new Date(), nm=now.getHours()*60+now.getMinutes(), n=0;document.getElementById("date").textContent=now.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric",year:"numeric"});
+list.innerHTML=tasks.map((t,i)=>{let d=!!s.done[i];if(d)n++;let start=mins(t[0]),over=!d&&nm>start,act=!d&&nm>=start&&nm<start+60;return `<div class="task ${d?"done":""} ${over?"overdue":""} ${act?"active":""}" onclick="toggle(${i})"><div class="check">${d?"✓":""}</div><div class="time">${t[1]}</div><div><div class="name">${t[2]}</div><div class="tag">${t[3]}</div></div>${over?'<div class="status">OVERDUE</div>':act?'<div class="status" style="color:#2563eb">NOW</div>':""}</div>`}).join("");
+let p=Math.round(n/tasks.length*100);document.getElementById("ring").style.setProperty("--p",p+"%");document.getElementById("pct").textContent=p+"%";}
+function toggle(i){s.done[i]=!s.done[i];save();render();if(s.done[i]&&navigator.vibrate)navigator.vibrate(70)}
+all.onclick=()=>{tasks.forEach((_,i)=>s.done[i]=true);save();render()};reset.onclick=()=>{s={day:today(),done:{}};save();render()};
+setInterval(()=>{if(s.day!==today()){s={day:today(),done:{}};save()}render()},30000);render();
+let deferred;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;install.style.display="block"});install.onclick=async()=>{if(deferred){deferred.prompt();deferred=null}};
+if("Notification"in window && Notification.permission==="default"){setTimeout(()=>Notification.requestPermission(),1200)}
+let notified={};setInterval(()=>{if(!("Notification"in window)||Notification.permission!=="granted")return;let now=new Date(),key=now.toISOString().slice(0,10)+"-"+now.getHours()+":"+now.getMinutes();tasks.forEach((t,i)=>{if(t[0]===String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0")&&!s.done[i]&&!notified[key+i]){new Notification("⏰ Daily Timetable",{body:t[2]+" — "+t[1],tag:"tt-"+i});notified[key+i]=1}})},15000);
+</script></body></html>
